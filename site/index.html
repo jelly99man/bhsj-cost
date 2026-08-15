@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F7F7F4">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127956;</text></svg>">
+<title>북한산장 원가 계산기</title>
+<style>
+  /* 라이트 전용 — 뷰어가 다크로 토글해도 이 팔레트를 유지합니다 */
+  :root,
+  :root[data-theme="dark"],
+  :root[data-theme="light"]{
+    --bg:#F7F7F4;
+    --card:#FFFFFF;
+    --card-2:#FAFAF8;
+    --line:#EBEAE5;
+    --line-2:#DEDCD5;
+    --t1:#1A1917;
+    --t2:#57544D;
+    --t3:#8A867D;
+    --t4:#B3AFA6;
+    --accent:#2F5FD8;
+    --accent-bg:#EDF2FE;
+    --accent-line:#C6D5F8;
+    --ok:#0F7F58;
+    --ok-bg:#E6F4EE;
+    --warn:#A86B04;
+    --warn-bg:#FBF0D9;
+    --bad:#BE3A2E;
+    --bad-bg:#FBE9E6;
+    --font:-apple-system,BlinkMacSystemFont,Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    color-scheme:light;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--t1);
+    font-family:var(--font);font-size:14px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;letter-spacing:-.005em;
+  }
+  .num{font-variant-numeric:tabular-nums;font-family:var(--mono);}
+  .muted{color:var(--t4);}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 20px 80px;}
+
+  /* ---------- header ---------- */
+  header{padding:34px 4px 20px;}
+  header h1{font-size:24px;font-weight:750;margin:0;letter-spacing:-.03em;}
+  header p{margin:5px 0 0;color:var(--t3);font-size:13.5px;}
+
+  /* ---------- bento kpi ---------- */
+  .bento{
+    display:grid;gap:12px;margin-bottom:22px;
+    grid-template-columns:repeat(4,1fr);
+  }
+  .tile{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;
+  }
+  .tile.wide{grid-column:span 2;}
+  .tile dt{font-size:12px;color:var(--t3);font-weight:600;margin:0;}
+  .tile dd{margin:0;font-size:30px;font-weight:750;letter-spacing:-.04em;font-family:var(--mono);line-height:1.05;}
+  .tile.sm dd{font-size:22px;}
+  .tile dd small{font-size:13px;font-weight:600;color:var(--t3);margin-left:3px;font-family:var(--font);letter-spacing:-.01em;}
+  .tile .note{font-size:12px;color:var(--t3);}
+  .spark{display:flex;gap:3px;align-items:flex-end;height:34px;}
+  .spark i{flex:1;border-radius:2px 2px 0 0;background:var(--accent-line);min-height:3px;}
+  .spark i.ok{background:#9CCBB7;}.spark i.warn{background:#E4C083;}.spark i.bad{background:#E5A69D;}
+
+  /* ---------- toolbar ---------- */
+  .bar{
+    position:sticky;top:0;z-index:5;background:var(--bg);
+    padding:10px 0 12px;margin-bottom:4px;
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  }
+  .tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;}
+  .tabs button{
+    border:0;background:transparent;color:var(--t3);font-family:inherit;
+    font-size:13px;font-weight:650;padding:6px 13px;border-radius:9px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .tabs button:hover{color:var(--t1);}
+  .tabs button[aria-current="true"]{background:var(--accent-bg);color:var(--accent);}
+  .tabs .cnt{font-family:var(--mono);font-size:11px;opacity:.7;}
+  .spacer{flex:1;}
+  .search{
+    display:flex;align-items:center;gap:7px;background:var(--card);
+    border:1px solid var(--line);border-radius:11px;padding:7px 11px;min-width:180px;
+  }
+  .search input{border:0;background:transparent;font-family:inherit;font-size:13px;
+    color:var(--t1);width:100%;outline:0;}
+  .search svg{flex:none;color:var(--t4);}
+  .btn{
+    border:1px solid var(--line);background:var(--card);color:var(--t2);
+    font-family:inherit;font-size:12.5px;font-weight:650;
+    padding:7px 12px;border-radius:11px;cursor:pointer;white-space:nowrap;
+  }
+  .btn:hover{background:var(--card-2);color:var(--t1);}
+  .btn[aria-pressed="true"]{background:var(--accent-bg);border-color:var(--accent-line);color:var(--accent);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.primary:hover{background:#2751BE;color:#fff;}
+  .btn:focus-visible,.tabs button:focus-visible,input:focus-visible,.card-top:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;
+  }
+
+  /* ---------- grids ---------- */
+  .grid{display:grid;gap:12px;align-items:start;}
+  .grid.menus{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));}
+  .grid.batches{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));}
+  .grid.ings{grid-template-columns:repeat(auto-fill,minmax(232px,1fr));}
+  .gh{
+    font-size:12px;font-weight:700;color:var(--t3);
+    margin:20px 4px 10px;letter-spacing:.01em;
+    display:flex;align-items:center;gap:8px;
+  }
+  .gh:first-child{margin-top:6px;}
+  .gh span{font-family:var(--mono);font-weight:600;color:var(--t4);font-size:11px;}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    overflow:hidden;
+  }
+  .card.on{border-color:var(--accent-line);}
+  .card-top{
+    width:100%;border:0;background:transparent;font-family:inherit;color:inherit;
+    text-align:left;padding:16px 18px;cursor:pointer;display:block;
+  }
+  .card-top:hover{background:var(--card-2);}
+  .ct-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .ct-name{font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.3;}
+  .ct-name small{display:block;font-size:11.5px;font-weight:500;color:var(--t4);margin-top:1px;}
+  .ct-cost{display:flex;align-items:baseline;gap:5px;margin-top:12px;}
+  .ct-cost b{font-size:25px;font-weight:750;letter-spacing:-.04em;font-family:var(--mono);}
+  .ct-cost i{font-style:normal;font-size:12.5px;color:var(--t3);font-weight:600;}
+  .track{height:5px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:11px;}
+  .track i{display:block;height:100%;border-radius:99px;background:var(--ok);transition:width .25s;}
+  .track i.warn{background:var(--warn);}.track i.bad{background:var(--bad);}.track i.wait{background:var(--t4);}
+  .ct-foot{
+    display:flex;gap:14px;margin-top:11px;font-size:12px;color:var(--t3);
+    align-items:center;flex-wrap:wrap;
+  }
+  .ct-foot b{font-family:var(--mono);color:var(--t2);font-weight:650;font-variant-numeric:tabular-nums;}
+  .ct-more{margin-left:auto;color:var(--accent);font-weight:650;font-size:12px;}
+
+  .tag{display:inline-block;font-size:11.5px;font-weight:650;padding:2px 7px;border-radius:7px;white-space:nowrap;}
+  .t-ok{background:var(--ok-bg);color:var(--ok);}
+  .t-warn{background:var(--warn-bg);color:var(--warn);}
+  .t-bad{background:var(--bad-bg);color:var(--bad);}
+  .t-wait{background:var(--card-2);color:var(--t3);border:1px solid var(--line);}
+  .t-sub{background:var(--accent-bg);color:var(--accent);font-size:10.5px;padding:1px 5px;}
+
+  .body{display:none;padding:0 18px 16px;border-top:1px solid var(--line);}
+  .card.on .body{display:block;}
+  .ln{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .ln:last-of-type{border-bottom:0;}
+  .ln-nm{flex:1;min-width:0;font-size:13px;font-weight:600;}
+  .ln-nm small{display:block;font-size:11px;color:var(--t4);font-weight:400;margin-top:-1px;}
+  .ln-amt{display:flex;align-items:center;gap:4px;flex:none;}
+  .ln-cost{min-width:64px;text-align:right;font-size:13px;font-weight:650;
+    font-family:var(--mono);font-variant-numeric:tabular-nums;flex:none;}
+  .ln-cost.muted{font-size:11px;font-weight:500;}
+  .sum{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    margin-top:10px;padding-top:11px;border-top:1.5px solid var(--line-2);
+    font-weight:750;font-size:14px;
+  }
+  .hint{
+    font-size:11.5px;color:var(--t3);background:var(--card-2);
+    border:1px solid var(--line);border-radius:11px;padding:9px 11px;margin-top:11px;line-height:1.5;
+  }
+  .hint b{color:var(--t2);}
+
+  /* ingredient card */
+  .ic{padding:15px 16px;display:flex;flex-direction:column;gap:11px;}
+  .ic-nm{font-size:13.5px;font-weight:700;letter-spacing:-.02em;line-height:1.3;}
+  .ic-val{display:flex;align-items:baseline;gap:4px;}
+  .ic-val b{font-size:21px;font-weight:750;font-family:var(--mono);letter-spacing:-.03em;}
+  .ic-val i{font-style:normal;font-size:11.5px;color:var(--t3);font-weight:600;}
+  .ic-in{display:flex;gap:7px;}
+  .fld{flex:1;min-width:0;}
+  .fld label{display:block;font-size:10.5px;color:var(--t3);font-weight:650;margin-bottom:3px;}
+  .in{
+    font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;
+    color:var(--t1);background:var(--card-2);border:1.5px solid var(--line);
+    border-radius:9px;padding:7px 9px;width:100%;text-align:right;
+  }
+  .in:hover{border-color:var(--line-2);}
+  .in:focus{outline:0;border-color:var(--accent);background:var(--card);
+    box-shadow:0 0 0 3px var(--accent-bg);}
+  .in::placeholder{color:var(--t4);font-family:var(--font);font-size:12px;}
+  .in.s{width:66px;text-align:right;padding:5px 8px;}
+  .u{font-size:11px;color:var(--t4);font-weight:600;min-width:16px;}
+
+  .empty{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:44px 20px;text-align:center;color:var(--t3);font-size:13.5px;
+  }
+
+  /* backup */
+  .sheet{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:18px;margin-top:16px;display:flex;flex-direction:column;gap:15px;max-width:560px;
+  }
+  .sheet h2{font-size:14px;margin:0;font-weight:700;}
+  .sheet p{margin:4px 0 0;font-size:12.5px;color:var(--t3);line-height:1.55;}
+  .sheet label{font-size:11.5px;font-weight:650;color:var(--t3);display:block;margin-bottom:5px;}
+  .sheet textarea{
+    width:100%;font-family:var(--mono);font-size:11px;line-height:1.5;
+    background:var(--card-2);border:1.5px solid var(--line);border-radius:11px;
+    padding:10px;color:var(--t2);resize:vertical;
+  }
+  .sheet textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg);}
+  .acts{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;}
+
+  .toast{
+    position:fixed;left:50%;bottom:22px;transform:translate(-50%,8px);z-index:100;
+    background:var(--t1);color:#fff;font-size:12.5px;font-weight:650;
+    padding:9px 16px;border-radius:11px;opacity:0;pointer-events:none;transition:.18s;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0);}
+
+  @media (max-width:820px){
+    .bento{grid-template-columns:repeat(2,1fr);}
+    .tile.wide{grid-column:span 2;}
+  }
+  @media (max-width:520px){
+    .wrap{padding:0 14px 70px;}
+    .bento{grid-template-columns:1fr;}
+    .tile.wide{grid-column:span 1;}
+    .grid.ings{grid-template-columns:1fr 1fr;}
+    header{padding:24px 2px 16px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>북한산장 원가 계산기</h1>
+    <p>재료값을 고치면 반제품과 메뉴 원가가 바로 다시 계산됩니다</p>
+  </header>
+
+  <dl class="bento">
+    <div class="tile wide">
+      <dt>평균 원가율 <span class="muted">· 원가 확정 메뉴 기준</span></dt>
+      <dd id="k1">—</dd>
+      <div class="spark" id="spark" aria-hidden="true"></div>
+    </div>
+    <div class="tile sm">
+      <dt>원가 확정</dt>
+      <dd id="k2">—</dd>
+      <div class="note" id="k2n">—</div>
+    </div>
+    <div class="tile sm">
+      <dt>단가 미입력 재료</dt>
+      <dd id="k3">—</dd>
+      <div class="note" id="k3n">채우면 원가가 완성돼요</div>
+    </div>
+    <div class="tile sm wide">
+      <dt>가장 원가율 높은 메뉴</dt>
+      <dd id="k4">—</dd>
+      <div class="note" id="k4n">—</div>
+    </div>
+    <div class="tile sm wide">
+      <dt>가장 여유 있는 메뉴</dt>
+      <dd id="k5">—</dd>
+      <div class="note" id="k5n">—</div>
+    </div>
+  </dl>
+
+  <div class="bar">
+    <div class="tabs" id="tabs">
+      <button data-view="menu" aria-current="true">메뉴 <span class="cnt" id="c-menu"></span></button>
+      <button data-view="batch" aria-current="false">반제품 <span class="cnt" id="c-batch"></span></button>
+      <button data-view="ing" aria-current="false">재료 <span class="cnt" id="c-ing"></span></button>
+    </div>
+    <span class="spacer"></span>
+    <label class="search">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.7"/>
+        <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <input type="text" id="q" placeholder="이름으로 찾기" aria-label="검색">
+    </label>
+    <button class="btn" id="fMiss" aria-pressed="false">미입력만</button>
+    <button class="btn" id="fSort" aria-pressed="false">원가율순</button>
+  </div>
+
+  <main id="view"></main>
+
+  <section class="sheet" id="backupPanel" hidden>
+    <div>
+      <h2>다른 기기에서도 같은 값 보기</h2>
+      <p>입력한 값은 지금 이 브라우저에만 저장됩니다. 코드를 복사해 두면 폰이나 다른 컴퓨터에서 그대로 불러올 수 있어요.</p>
+    </div>
+    <div>
+      <label for="backupOut">내 값 코드</label>
+      <textarea id="backupOut" readonly rows="3"></textarea>
+      <div class="acts">
+        <button class="btn primary" id="copyBtn">코드 복사</button>
+        <button class="btn" id="fileBtn" hidden>파일로 저장</button>
+      </div>
+    </div>
+    <div>
+      <label for="backupIn">코드로 불러오기</label>
+      <textarea id="backupIn" rows="3" placeholder="복사해 둔 코드를 붙여넣으세요"></textarea>
+      <div class="acts"><button class="btn" id="loadBtn">불러오기</button></div>
+    </div>
+  </section>
+
+  <div class="acts" style="margin-top:16px;padding:0 4px">
+    <button class="btn" id="backupBtn">값 백업 · 불러오기</button>
+    <button class="btn" id="reset">기본값으로 초기화</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var SEED_ING = [
+    ["bean","블렌딩 원두 (진양조)","음료",22000,1000,"g"],
+    ["jaksal","잭살차","음료",99000,200,"g"],
+    ["heotgae","헛개열매차","음료",59000,200,"g"],
+    ["mokryeon","목련현미차","음료",59000,200,"g"],
+    ["ssuk","이른쑥차","음료",79000,200,"g"],
+    ["milkteaBase","밀크티 원액","음료",null,null,"g"],
+    ["kombuG","자몽 얼그레이 콤부베이스","음료",6300,500,"g"],
+    ["kombuR","라즈베리레몬 콤부베이스","음료",6300,500,"g"],
+    ["milk","매일우유 바리스타","음료",2100,1000,"ml"],
+    ["oat","어메이징오트","음료",2600,950,"ml"],
+    ["soda","탄산수","음료",360,190,"ml"],
+    ["cream","생크림","음료",4800,500,"ml"],
+    ["condensed","연유","음료",4600,500,"g"],
+    ["passion","테너 과육 패션후르츠","음료",13800,1000,"g"],
+    ["tenerbase","테너베이스","음료",10700,1200,"g"],
+    ["rosemary","로즈마리","음료",1880,10,"g"],
+    ["pear","배","음료",null,null,"g"],
+    ["lemon","레몬","음료",null,null,"g"],
+    ["snackA","두부스낵 아몬드","스낵",16500,10,"개"],
+    ["snackH","두부스낵 현미","스낵",16500,10,"개"],
+    ["snackO","두부스낵 오트","스낵",16500,10,"개"],
+    ["bread","빵 (샌드위치용)","샌드위치",null,null,"개"],
+    ["jambon","잠봉","샌드위치",null,null,"g"],
+    ["burrata","부라타 치즈","샌드위치",null,null,"개"],
+    ["parmesan","파마산 치즈","샌드위치",null,null,"g"],
+    ["tofu","두부","샌드위치",null,null,"g"],
+    ["yogurt","요거트","샌드위치",null,null,"g"],
+    ["mayo","마요네즈","샌드위치",null,null,"g"],
+    ["mustard","홀그레인 머스타드","샌드위치",null,null,"g"],
+    ["gochujang","고추장","샌드위치",null,null,"g"],
+    ["balsamic","발사믹 글레이즈","샌드위치",null,null,"g"],
+    ["oliveoil","올리브유","샌드위치",null,null,"g"],
+    ["sesameoil","참기름","샌드위치",null,null,"g"],
+    ["perillaoil","들기름","샌드위치",null,null,"g"],
+    ["vinegar","식초","샌드위치",null,null,"g"],
+    ["honey","꿀","샌드위치",null,null,"g"],
+    ["oligo","올리고당","샌드위치",null,null,"g"],
+    ["salt","소금","샌드위치",null,null,"g"],
+    ["pepper","후추","샌드위치",null,null,"g"],
+    ["chili","고춧가루","샌드위치",null,null,"g"],
+    ["sesame","깨","샌드위치",null,null,"g"],
+    ["sunflower","해바라기씨","샌드위치",null,null,"g"],
+    ["perilla","깻잎","샌드위치",null,null,"g"],
+    ["arugula","루꼴라","샌드위치",null,null,"g"],
+    ["cilantro","고수","샌드위치",null,null,"g"],
+    ["lettuce","청상추","샌드위치",null,null,"g"],
+    ["greenonion","대파","샌드위치",null,null,"g"],
+    ["carrot","당근","샌드위치",null,null,"g"],
+    ["tomato","방울토마토","샌드위치",null,null,"g"],
+    ["water","물","샌드위치",0,1,"g"],
+    ["cup","종이컵 13oz","포장 (원가 미반영)",30800,1000,"개"],
+    ["lid","뚜껑 85파이","포장 (원가 미반영)",3800,100,"개"],
+    ["holder","컵홀더 13oz","포장 (원가 미반영)",3800,100,"개"]
+  ];
+
+  var SEED_BATCH = [
+    ["pesto","깻잎페스토","10인분 표기",[
+      ["sunflower",50,""],["parmesan",40,""],["oliveoil",30,""],
+      ["perilla",18,"9장"],["sesameoil",7,""],["lemon",1,"제스트"],
+      ["pepper",0.5,"5바퀴 가정"],["water",75,""]]],
+    ["cilantroSauce","고수 요거트 소스","10인분",[
+      ["yogurt",180,""],["cilantro",25,"줄기 포함"],["lemon",6,"즙"],
+      ["lemon",2,"제스트"],["chili",1,""],["salt",1,""],["pepper",1,"10바퀴 가정"],
+      ["oligo",0,"레시피상 0g"]]],
+    ["tofuSauce","두부 양념","10인분",[
+      ["gochujang",150,""],["honey",50,""],["sesameoil",30,""],["vinegar",30,""],
+      ["greenonion",30,""],["sesame",10,""],["water",100,""]]],
+    ["carrotRapee","당근 라페","12인분",[
+      ["carrot",500,"2개"],["mustard",30,""],["oliveoil",15,""],["honey",15,""],
+      ["lemon",10,"즙"],["salt",4,"절임용"],["pepper",0.3,""]]],
+    ["mayoSauce","마요네즈 소스","인분 미기재",[
+      ["mayo",150,""],["mustard",75,""],["oligo",25,""],["lemon",5,"즙"],
+      ["pepper",0.5,"5바퀴 가정"]]]
+  ];
+
+  var SEED_MENU = [
+    ["americano","아메리카노","커피",3000,[["i","bean",18,""]]],
+    ["latte","카페라떼","커피",4000,[["i","bean",20,""],["i","milk",200,""]]],
+    ["jaksalT","잭살차","차",6500,[["i","jaksal",3,""]]],
+    ["heotgaeT","헛개열매차","차",6000,[["i","heotgae",4,""]]],
+    ["mokryeonT","목련현미차","차",6000,[["i","mokryeon",3,""]]],
+    ["ssukT","이른쑥차","차",6000,[["i","ssuk",2,""]]],
+    ["milkteaM","밀크티","차",null,[
+      ["i","milk",180,"레시피 180g 기준"],["i","milkteaBase",45,""]]],
+    ["kombuGT","자몽얼그레이 콤부차","콤부차",6000,[["i","kombuG",50,""],["i","soda",190,""]]],
+    ["kombuRT","라즈베리레몬 콤부차","콤부차",6000,[["i","kombuR",50,""],["i","soda",190,""]]],
+    ["snackAM","두부스낵 아몬드","스낵",3300,[["i","snackA",1,""]]],
+    ["snackHM","두부스낵 현미","스낵",3300,[["i","snackH",1,""]]],
+    ["snackOM","두부스낵 오트","스낵",3300,[["i","snackO",1,""]]],
+    ["pearAde","배엘더플라워에이드","에이드",6000,[["i","pear",null,"사용량 미확인"]]],
+    ["lemonPassion","레몬패션후르츠","에이드",6000,[["i","lemon",null,"사용량 미확인"]]],
+    ["greenMountain","그린 마운틴 치즈","샌드위치",null,[
+      ["i","bread",1,""],["b","pesto",40,""],["i","arugula",8,""],
+      ["i","burrata",1,"50g"],["i","tomato",null,"사용량 미기재"],
+      ["i","balsamic",1,"마무리"],["i","oliveoil",1,"마무리"],
+      ["i","lemon",1,"마무리 즙"],["i","oliveoil",null,"빵 굽기 · 미기재"]]],
+    ["seoulFire","서울 파이어 두부","샌드위치",null,[
+      ["i","bread",1,""],["i","tofu",120,"30g x 4조각"],["b","tofuSauce",40,"1인분 40g 가정"],
+      ["b","cilantroSauce",20,""],["i","lettuce",10,"2장"],["i","pear",10,"1조각"],
+      ["i","perillaoil",null,"두부 굽기 · 미기재"],["b","cilantroSauce",null,"마무리 추가 · 미기재"]]],
+    ["carrotJambon","당근밭의 잠봉","샌드위치",null,[
+      ["i","bread",1,""],["i","jambon",50,""],["b","carrotRapee",40,""],
+      ["i","arugula",8,""],["b","mayoSauce",null,"사용량 미기재"],
+      ["i","oliveoil",null,"빵 굽기 · 미기재"]]]
+  ];
+
+  var KEY="bhsj-cost-v2";
+  var S=null, view="menu", open={}, q="", onlyMiss=false, sortRate=false;
+
+  function seed(){
+    var ing={};
+    SEED_ING.forEach(function(r){ ing[r[0]]={name:r[1],cat:r[2],price:r[3],qty:r[4],unit:r[5]}; });
+    return {
+      ing:ing,
+      batch:SEED_BATCH.map(function(b){
+        return {id:b[0],name:b[1],yield:b[2],
+          items:b[3].map(function(x){return {ing:x[0],amt:x[1],note:x[2]};})};
+      }),
+      menu:SEED_MENU.map(function(m){
+        return {id:m[0],name:m[1],cat:m[2],price:m[3],
+          items:m[4].map(function(x){return {kind:x[0],ref:x[1],amt:x[2],note:x[3]};})};
+      })
+    };
+  }
+
+  function unitCost(id){
+    var g=S.ing[id];
+    if(!g||g.price===null||g.qty===null||!g.qty) return null;
+    return g.price/g.qty;
+  }
+  function batchById(id){
+    for(var i=0;i<S.batch.length;i++) if(S.batch[i].id===id) return S.batch[i];
+    return null;
+  }
+  function batchCalc(b){
+    var cost=0,weight=0,miss=0;
+    b.items.forEach(function(it){
+      var u=unitCost(it.ing);
+      if(it.amt===null||u===null){ if(it.amt!==0) miss++; }
+      if(it.amt!==null) weight+=it.amt;
+      if(it.amt!==null&&u!==null) cost+=it.amt*u;
+    });
+    return {cost:cost,weight:weight,miss:miss,perG:weight?cost/weight:null};
+  }
+  function lineUnit(it){
+    if(it.kind==="b"){ var b=batchById(it.ref); if(!b) return null;
+      var c=batchCalc(b); return c.miss?null:c.perG; }
+    return unitCost(it.ref);
+  }
+  function lineName(it){
+    if(it.kind==="b"){ var b=batchById(it.ref); return b?b.name:it.ref; }
+    var g=S.ing[it.ref]; return g?g.name:it.ref;
+  }
+  function lineUnitLabel(it){
+    if(it.kind==="b") return "g";
+    var g=S.ing[it.ref]; return g?g.unit:"";
+  }
+  function menuCalc(m){
+    var cost=0,miss=0;
+    m.items.forEach(function(it){
+      var u=lineUnit(it);
+      if(it.amt===null||u===null){ miss++; return; }
+      cost+=it.amt*u;
+    });
+    return {cost:cost,miss:miss,rate:(m.price&&!miss)?cost/m.price:null};
+  }
+  function tone(r){ return r===null?"wait":(r<0.20?"ok":(r<0.35?"warn":"bad")); }
+  function toneWord(t){ return t==="ok"?"양호":t==="warn"?"주의":"높음"; }
+  function won(n,d){
+    if(n===null||n===undefined||isNaN(n)) return "—";
+    d=d===undefined?0:d;
+    return n.toLocaleString("ko-KR",{minimumFractionDigits:d,maximumFractionDigits:d});
+  }
+  function fmtUnit(u){
+    if(u===null) return "—";
+    if(Math.abs(u-Math.round(u))<1e-9) return won(Math.round(u),0);
+    if(u<10) return won(u,2);
+    if(u<100) return won(u,1);
+    return won(u,0);
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+  function hit(n){ return !q || n.toLowerCase().indexOf(q.toLowerCase())>=0; }
+
+  /* ---------- persistence ---------- */
+  function buildDiff(){
+    var base=seed(), d={i:{},b:{},m:{}};
+    Object.keys(S.ing).forEach(function(id){
+      var a=S.ing[id],o=base.ing[id];
+      if(o&&(a.price!==o.price||a.qty!==o.qty)) d.i[id]=[a.price,a.qty];
+    });
+    S.batch.forEach(function(bt,bi){
+      var ob=base.batch[bi]; if(!ob) return; var e={};
+      bt.items.forEach(function(it,j){ if(ob.items[j]&&it.amt!==ob.items[j].amt) e[j]=it.amt; });
+      if(Object.keys(e).length) d.b[bt.id]=e;
+    });
+    S.menu.forEach(function(m,mi){
+      var om=base.menu[mi]; if(!om) return; var e={},a={};
+      if(m.price!==om.price) e.p=m.price;
+      m.items.forEach(function(it,j){ if(om.items[j]&&it.amt!==om.items[j].amt) a[j]=it.amt; });
+      if(Object.keys(a).length) e.a=a;
+      if(Object.keys(e).length) d.m[m.id]=e;
+    });
+    return d;
+  }
+  function applyDiff(d){
+    var s=seed();
+    if(d.i) Object.keys(d.i).forEach(function(id){
+      if(s.ing[id]){ s.ing[id].price=d.i[id][0]; s.ing[id].qty=d.i[id][1]; }});
+    if(d.b) s.batch.forEach(function(bt){
+      var e=d.b[bt.id]; if(!e) return;
+      Object.keys(e).forEach(function(j){ if(bt.items[+j]) bt.items[+j].amt=e[j]; });});
+    if(d.m) s.menu.forEach(function(m){
+      var e=d.m[m.id]; if(!e) return;
+      if(Object.prototype.hasOwnProperty.call(e,"p")) m.price=e.p;
+      if(e.a) Object.keys(e.a).forEach(function(j){ if(m.items[+j]) m.items[+j].amt=e.a[j]; });});
+    return s;
+  }
+  function load(){
+    try{
+      var raw=localStorage.getItem(KEY);
+      if(raw){ var p=JSON.parse(raw); if(p&&p.v===2&&p.d) return applyDiff(p.d); }
+    }catch(e){}
+    return seed();
+  }
+  var saveT=null;
+  function save(){
+    clearTimeout(saveT);
+    saveT=setTimeout(function(){
+      try{ localStorage.setItem(KEY,JSON.stringify({v:2,d:buildDiff()})); toast("저장됨"); }
+      catch(e){ toast("이 브라우저에선 저장이 안 돼요"); }
+    },400);
+  }
+  var toastT=null;
+  function toast(m){
+    var el=document.getElementById("toast");
+    el.textContent=m; el.classList.add("on");
+    clearTimeout(toastT);
+    toastT=setTimeout(function(){ el.classList.remove("on"); },1500);
+  }
+
+  /* ---------- render ---------- */
+  function lineRow(nameHtml,inputHtml,unitLbl,costKey,cost){
+    return '<div class="ln"><span class="ln-nm">'+nameHtml+'</span>'+
+      '<span class="ln-amt">'+inputHtml+'<span class="u">'+esc(unitLbl)+'</span></span>'+
+      '<span class="ln-cost'+(cost===null?' muted':'')+'" data-o="'+costKey+'">'+
+      (cost===null?'단가 없음':won(Math.round(cost)))+'</span></div>';
+  }
+
+  function menuCard(m){
+    var c=menuCalc(m), t=tone(c.rate), on=open["m"+m.id];
+    var pct=c.rate===null?0:Math.min(100,c.rate*100);
+    var h='<article class="card'+(on?' on':'')+'" data-card="m'+m.id+'">';
+    h+='<button class="card-top" data-tog="m'+m.id+'" aria-expanded="'+(on?'true':'false')+'">';
+    h+='<span class="ct-head"><span class="ct-name">'+esc(m.name)+
+       '<small>'+esc(m.cat)+'</small></span>';
+    h+='<span class="tag t-'+(c.miss?'wait':t)+'" data-o="tg-m'+m.id+'">'+
+       (c.miss?('미입력 '+c.miss):(c.rate===null?'판매가 없음':toneWord(t)))+'</span></span>';
+    h+='<span class="ct-cost"><b class="num" data-o="mc-'+m.id+'">'+
+       (c.cost?won(Math.round(c.cost)):'—')+'</b><i>원 · 원가</i></span>';
+    h+='<span class="track"><i class="'+t+'" data-o="bar-m'+m.id+'" style="width:'+pct+'%"></i></span>';
+    h+='<span class="ct-foot"><span>원가율 <b data-o="rv-m'+m.id+'">'+
+       (c.rate===null?'—':(c.rate*100).toFixed(1)+'%')+'</b></span>';
+    h+='<span>마진 <b data-o="mm-'+m.id+'">'+
+       ((m.price&&!c.miss)?won(Math.round(m.price-c.cost)):'—')+'</b></span>';
+    h+='<span class="ct-more" data-n="재료 '+m.items.length+'">'+
+       (on?'접기':'재료 '+m.items.length)+'</span></span>';
+    h+='</button>';
+
+    h+='<div class="body">';
+    m.items.forEach(function(it,idx){
+      var u=lineUnit(it), lc=(it.amt!==null&&u!==null)?it.amt*u:null;
+      var nm=esc(lineName(it))+(it.kind==="b"?' <span class="tag t-sub">반제품</span>':'')+
+        (it.note?'<small>'+esc(it.note)+'</small>':'')+
+        '<small class="num" data-o="ml-u-'+m.id+'-'+idx+'">'+
+        (u===null?'단가 미입력':fmtUnit(u)+'원/'+esc(lineUnitLabel(it)))+'</small>';
+      var inp='<input class="in s" type="text" inputmode="decimal" value="'+
+        (it.amt===null?"":it.amt)+'" placeholder="?" data-mi="'+m.id+'" data-idx="'+idx+
+        '" aria-label="'+esc(lineName(it))+' 사용량">';
+      h+=lineRow(nm,inp,lineUnitLabel(it),"ml-c-"+m.id+"-"+idx,lc);
+    });
+    h+='<div class="sum"><span>원가 합계</span><span class="num" data-o="mf-'+m.id+'">'+
+       (c.cost?won(Math.round(c.cost))+'원':'—')+'</span></div>';
+    h+='<div class="ic-in" style="margin-top:12px"><div class="fld"><label>판매가</label>'+
+       '<input class="in" type="text" inputmode="numeric" value="'+(m.price===null?"":m.price)+
+       '" placeholder="미정" data-price="'+m.id+'" aria-label="'+esc(m.name)+' 판매가"></div></div>';
+    if(c.miss) h+='<div class="hint">재료 <b>'+c.miss+'개</b>의 단가나 사용량이 비어 있어 아직 부분값입니다.</div>';
+    h+='</div></article>';
+    return h;
+  }
+
+  function menuView(){
+    var rows=S.menu.filter(function(m){
+      if(!hit(m.name)) return false;
+      if(onlyMiss){ var c=menuCalc(m); if(c.miss===0&&c.rate!==null) return false; }
+      return true;
+    });
+    if(!rows.length) return emptyBox();
+    if(sortRate){
+      rows=rows.slice().sort(function(a,b){
+        var ra=menuCalc(a).rate, rb=menuCalc(b).rate;
+        if(ra===null) return 1; if(rb===null) return -1; return rb-ra;
+      });
+      return '<div class="gh">원가율 높은 순 <span>'+rows.length+'</span></div>'+
+        '<div class="grid menus">'+rows.map(menuCard).join("")+'</div>';
+    }
+    var cats=[],by={};
+    rows.forEach(function(m){ if(!by[m.cat]){by[m.cat]=[];cats.push(m.cat);} by[m.cat].push(m); });
+    return cats.map(function(cat){
+      return '<div class="gh">'+esc(cat)+' <span>'+by[cat].length+'</span></div>'+
+        '<div class="grid menus">'+by[cat].map(menuCard).join("")+'</div>';
+    }).join("");
+  }
+
+  function batchView(){
+    var rows=S.batch.filter(function(b){
+      if(!hit(b.name)) return false;
+      if(onlyMiss && batchCalc(b).miss===0) return false;
+      return true;
+    });
+    if(!rows.length) return emptyBox();
+    var cards=rows.map(function(b){
+      var c=batchCalc(b), on=open["b"+b.id];
+      var h='<article class="card'+(on?' on':'')+'" data-card="b'+b.id+'">';
+      h+='<button class="card-top" data-tog="b'+b.id+'" aria-expanded="'+(on?'true':'false')+'">';
+      h+='<span class="ct-head"><span class="ct-name">'+esc(b.name)+
+         '<small>'+esc(b.yield)+'</small></span>';
+      h+='<span class="tag '+(c.miss?'t-wait':'t-ok')+'" data-o="bt-'+b.id+'">'+
+         (c.miss?('미입력 '+c.miss):'확정')+'</span></span>';
+      h+='<span class="ct-cost"><b class="num" data-o="bp-'+b.id+'">'+
+         ((c.miss||!c.perG)?'—':won(c.perG,2))+'</b><i>원 · 1g당</i></span>';
+      h+='<span class="ct-foot"><span>완성 <b data-o="bw-'+b.id+'">'+won(c.weight,1)+'</b>g</span>';
+      h+='<span>배치 <b data-o="bc-'+b.id+'">'+(c.miss?'—':won(Math.round(c.cost)))+'</b>원</span>';
+      h+='<span class="ct-more" data-n="재료 '+b.items.length+'">'+
+         (on?'접기':'재료 '+b.items.length)+'</span></span></button>';
+      h+='<div class="body">';
+      b.items.forEach(function(it,idx){
+        var u=unitCost(it.ing), lc=(it.amt!==null&&u!==null)?it.amt*u:null;
+        var nm=esc(S.ing[it.ing]?S.ing[it.ing].name:it.ing)+
+          (it.note?'<small>'+esc(it.note)+'</small>':'')+
+          '<small class="num" data-o="bl-u-'+b.id+'-'+idx+'">'+
+          (u===null?'단가 미입력':fmtUnit(u)+'원/g')+'</small>';
+        var inp='<input class="in s" type="text" inputmode="decimal" value="'+
+          (it.amt===null?"":it.amt)+'" placeholder="?" data-bi="'+b.id+'" data-idx="'+idx+
+          '" aria-label="사용량">';
+        h+=lineRow(nm,inp,"g","bl-c-"+b.id+"-"+idx,lc);
+      });
+      h+='<div class="hint">배치 원가를 완성 총량으로 나눈 <b>1g당 원가</b>가 메뉴로 넘어갑니다. 샌드위치에 40g 쓰면 40g어치만 잡혀요.</div>';
+      h+='</div></article>';
+      return h;
+    }).join("");
+    return '<div class="gh">배치로 만들어 조금씩 쓰는 소스·페스토 <span>'+rows.length+'</span></div>'+
+      '<div class="grid batches">'+cards+'</div>';
+  }
+
+  function ingView(){
+    var ids=Object.keys(S.ing).filter(function(id){
+      if(!hit(S.ing[id].name)) return false;
+      if(onlyMiss && unitCost(id)!==null) return false;
+      return true;
+    });
+    if(!ids.length) return emptyBox();
+    var cats=[],by={};
+    ids.forEach(function(id){ var c=S.ing[id].cat;
+      if(!by[c]){by[c]=[];cats.push(c);} by[c].push(id); });
+    return cats.map(function(cat){
+      var cards=by[cat].map(function(id){
+        var g=S.ing[id], u=unitCost(id);
+        return '<article class="card"><div class="ic">'+
+          '<div class="ic-nm">'+esc(g.name)+'</div>'+
+          '<div class="ic-val"><b class="num'+(u===null?' muted':'')+'" data-o="iu-'+id+'">'+
+          fmtUnit(u)+'</b><i>원 / '+esc(g.unit)+'</i></div>'+
+          '<div class="ic-in">'+
+            '<div class="fld"><label>구매가</label><input class="in" type="text" inputmode="numeric" '+
+              'value="'+(g.price===null?"":g.price)+'" placeholder="0" data-ip="'+id+'" '+
+              'aria-label="'+esc(g.name)+' 구매가"></div>'+
+            '<div class="fld"><label>총량 ('+esc(g.unit)+')</label><input class="in" type="text" inputmode="decimal" '+
+              'value="'+(g.qty===null?"":g.qty)+'" placeholder="0" data-iq="'+id+'" '+
+              'aria-label="'+esc(g.name)+' 총량"></div>'+
+          '</div></div></article>';
+      }).join("");
+      var missN=0; by[cat].forEach(function(id){ if(unitCost(id)===null) missN++; });
+      return '<div class="gh">'+esc(cat)+' <span>'+by[cat].length+
+        (missN?' · 미입력 '+missN:'')+'</span></div><div class="grid ings">'+cards+'</div>';
+    }).join("");
+  }
+
+  function emptyBox(){
+    return '<div class="empty">'+(q?'‘'+esc(q)+'’와 맞는 항목이 없어요.':'표시할 항목이 없어요.')+'</div>';
+  }
+
+  /* ---------- targeted refresh ---------- */
+  function set(k,txt,muted){
+    var el=document.querySelector('[data-o="'+k+'"]');
+    if(!el) return;
+    el.textContent=txt;
+    if(muted!==undefined) el.classList.toggle("muted",!!muted);
+  }
+  function refresh(){
+    var rates=[],done=0,hi=null,hiN="",lo=null,loN="";
+    S.menu.forEach(function(m){
+      var c=menuCalc(m), t=tone(c.rate);
+      set("mc-"+m.id, c.cost?won(Math.round(c.cost)):"—");
+      set("mf-"+m.id, c.cost?won(Math.round(c.cost))+"원":"—");
+      set("rv-m"+m.id, c.rate===null?"—":(c.rate*100).toFixed(1)+"%");
+      set("mm-"+m.id, (m.price&&!c.miss)?won(Math.round(m.price-c.cost)):"—");
+      var bar=document.querySelector('[data-o="bar-m'+m.id+'"]');
+      if(bar){ bar.style.width=(c.rate===null?0:Math.min(100,c.rate*100))+"%"; bar.className=t; }
+      var tg=document.querySelector('[data-o="tg-m'+m.id+'"]');
+      if(tg){ tg.className="tag t-"+(c.miss?"wait":t);
+        tg.textContent=c.miss?("미입력 "+c.miss):(c.rate===null?"판매가 없음":toneWord(t)); }
+      m.items.forEach(function(it,idx){
+        var u=lineUnit(it), lc=(it.amt!==null&&u!==null)?it.amt*u:null;
+        set("ml-u-"+m.id+"-"+idx, u===null?"단가 미입력":fmtUnit(u)+"원/"+lineUnitLabel(it));
+        set("ml-c-"+m.id+"-"+idx, lc===null?"단가 없음":won(Math.round(lc)), lc===null);
+      });
+      if(c.rate!==null){ rates.push(c.rate); done++;
+        if(hi===null||c.rate>hi){hi=c.rate;hiN=m.name;}
+        if(lo===null||c.rate<lo){lo=c.rate;loN=m.name;} }
+    });
+    S.batch.forEach(function(b){
+      var c=batchCalc(b);
+      set("bw-"+b.id, won(c.weight,1));
+      set("bc-"+b.id, c.miss?"—":won(Math.round(c.cost)));
+      set("bp-"+b.id, (c.miss||!c.perG)?"—":won(c.perG,2), c.miss);
+      var tg=document.querySelector('[data-o="bt-'+b.id+'"]');
+      if(tg){ tg.className="tag "+(c.miss?"t-wait":"t-ok");
+        tg.textContent=c.miss?("미입력 "+c.miss):"확정"; }
+      b.items.forEach(function(it,idx){
+        var u=unitCost(it.ing), lc=(it.amt!==null&&u!==null)?it.amt*u:null;
+        set("bl-u-"+b.id+"-"+idx, u===null?"단가 미입력":fmtUnit(u)+"원/g");
+        set("bl-c-"+b.id+"-"+idx, lc===null?"단가 없음":won(Math.round(lc)), lc===null);
+      });
+    });
+    var missN=0;
+    Object.keys(S.ing).forEach(function(id){
+      var u=unitCost(id); if(u===null) missN++;
+      set("iu-"+id, fmtUnit(u), u===null);
+    });
+
+    var avg=rates.length?rates.reduce(function(a,b){return a+b;},0)/rates.length:null;
+    document.getElementById("k1").innerHTML=avg===null?"—":(avg*100).toFixed(1)+'<small>%</small>';
+    document.getElementById("k2").innerHTML=done+'<small>/ '+S.menu.length+'종</small>';
+    document.getElementById("k2n").textContent=(S.menu.length-done)+"종은 값이 더 필요해요";
+    document.getElementById("k3").innerHTML=missN+'<small>개</small>';
+    document.getElementById("k4").innerHTML=hi===null?"—":(hi*100).toFixed(1)+'<small>%</small>';
+    document.getElementById("k4n").textContent=hiN||"—";
+    document.getElementById("k5").innerHTML=lo===null?"—":(lo*100).toFixed(1)+'<small>%</small>';
+    document.getElementById("k5n").textContent=loN||"—";
+
+    var sp=document.getElementById("spark");
+    sp.innerHTML=rates.slice().sort(function(a,b){return a-b;}).map(function(r){
+      return '<i class="'+tone(r)+'" style="height:'+Math.max(8,Math.min(100,r*220))+'%"></i>';
+    }).join("");
+
+    document.getElementById("c-menu").textContent=S.menu.length;
+    document.getElementById("c-batch").textContent=S.batch.length;
+    document.getElementById("c-ing").textContent=Object.keys(S.ing).length;
+  }
+
+  function render(){
+    document.getElementById("view").innerHTML=
+      view==="menu"?menuView():(view==="batch"?batchView():ingView());
+    refresh();
+  }
+
+  /* ---------- events ---------- */
+  function num(v){
+    v=String(v).replace(/[,\s원]/g,"").trim();
+    if(v==="") return null;
+    var n=parseFloat(v);
+    return isNaN(n)?null:n;
+  }
+  document.getElementById("tabs").addEventListener("click",function(e){
+    var b=e.target.closest("button[data-view]"); if(!b) return;
+    view=b.dataset.view;
+    Array.prototype.forEach.call(this.querySelectorAll("button"),function(x){
+      x.setAttribute("aria-current", x===b?"true":"false"); });
+    render();
+  });
+  document.getElementById("q").addEventListener("input",function(){ q=this.value; render(); });
+  document.getElementById("fMiss").addEventListener("click",function(){
+    onlyMiss=!onlyMiss; this.setAttribute("aria-pressed",onlyMiss?"true":"false"); render(); });
+  document.getElementById("fSort").addEventListener("click",function(){
+    sortRate=!sortRate; this.setAttribute("aria-pressed",sortRate?"true":"false"); render(); });
+
+  var viewEl=document.getElementById("view");
+  viewEl.addEventListener("click",function(e){
+    var t=e.target.closest("[data-tog]"); if(!t) return;
+    var k=t.dataset.tog;
+    open[k]=!open[k];
+    var card=document.querySelector('[data-card="'+k+'"]');
+    if(card){
+      card.classList.toggle("on",!!open[k]);
+      t.setAttribute("aria-expanded",open[k]?"true":"false");
+      var more=t.querySelector(".ct-more");
+      if(more) more.textContent=open[k]?"접기":(more.dataset.n||"펼치기");
+    }
+  });
+  viewEl.addEventListener("input",function(e){
+    var el=e.target; if(el.tagName!=="INPUT") return;
+    var v=num(el.value), d=el.dataset;
+    if(d.ip!==undefined) S.ing[d.ip].price=v;
+    else if(d.iq!==undefined) S.ing[d.iq].qty=v;
+    else if(d.price!==undefined) S.menu.forEach(function(m){ if(m.id===d.price) m.price=v; });
+    else if(d.mi!==undefined) S.menu.forEach(function(m){ if(m.id===d.mi) m.items[+d.idx].amt=v; });
+    else if(d.bi!==undefined){ var b=batchById(d.bi); if(b) b.items[+d.idx].amt=v; }
+    else return;
+    refresh(); save();
+  });
+
+  document.getElementById("reset").addEventListener("click",function(){
+    S=seed(); open={}; save(); render(); toast("기본값으로 되돌렸어요");
+  });
+
+  function encodeState(){
+    try{ return btoa(unescape(encodeURIComponent(JSON.stringify(buildDiff())))); }catch(e){ return ""; }
+  }
+  function decodeState(c){
+    try{ return JSON.parse(decodeURIComponent(escape(atob(c.trim())))); }catch(e){ return null; }
+  }
+  var panel=document.getElementById("backupPanel");
+  document.getElementById("backupBtn").addEventListener("click",function(){
+    panel.hidden=!panel.hidden;
+    if(!panel.hidden){ document.getElementById("backupOut").value=encodeState();
+      panel.scrollIntoView({behavior:"smooth",block:"nearest"}); }
+  });
+  document.getElementById("copyBtn").addEventListener("click",function(){
+    var ta=document.getElementById("backupOut");
+    ta.value=encodeState(); ta.select();
+    var ok=function(){ toast("코드를 복사했어요"); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(ta.value).then(ok,function(){
+        try{ document.execCommand("copy"); ok(); }catch(e){ toast("직접 선택해 복사해주세요"); }});
+    }else{ try{ document.execCommand("copy"); ok(); }catch(e){ toast("직접 선택해 복사해주세요"); } }
+  });
+  document.getElementById("loadBtn").addEventListener("click",function(){
+    var code=document.getElementById("backupIn").value;
+    if(!code.trim()){ toast("코드를 붙여넣어주세요"); return; }
+    var d=decodeState(code);
+    if(!d||typeof d!=="object"){ toast("코드를 읽을 수 없어요"); return; }
+    S=applyDiff(d); open={}; save(); render();
+    document.getElementById("backupIn").value=""; toast("값을 불러왔어요");
+  });
+
+  (async function(){
+    var dl=null;
+    try{ dl=(window.claude&&claude.use)?await claude.use("downloads"):null; }catch(e){ dl=null; }
+    if(!dl) return;
+    var btn=document.getElementById("fileBtn"); btn.hidden=false;
+    btn.addEventListener("click",async function(){
+      try{
+        await dl.save({filename:"북한산장-원가-백업.json",
+          data:JSON.stringify({saved:new Date().toISOString(),data:buildDiff()},null,2)});
+        toast("파일로 저장했어요");
+      }catch(err){ toast(err&&err.code==="declined"?"저장을 취소했어요":"저장하지 못했어요"); }
+    });
+  })();
+
+  S=load();
+  render();
+})();
+</script>
+
+</body>
+</html>
