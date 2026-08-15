@@ -7,7 +7,7 @@
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#F7F7F4">
+<meta name="theme-color" content="#FFFFFF">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127956;</text></svg>">
 <title>북한산장 원가 계산기</title>
 <style>
@@ -48,10 +48,27 @@
   .muted{color:var(--t4);}
   .wrap{max-width:1200px;margin:0 auto;padding:0 20px 80px;}
 
-  /* ---------- header ---------- */
-  header{padding:34px 4px 20px;}
-  header h1{font-size:24px;font-weight:750;margin:0;letter-spacing:-.03em;}
-  header p{margin:5px 0 0;color:var(--t3);font-size:13.5px;}
+  /* ---------- top nav ---------- */
+  .topnav{
+    position:sticky;top:0;z-index:20;background:var(--card);
+    border-bottom:1px solid var(--line);
+  }
+  .topnav-in{
+    max-width:1200px;margin:0 auto;padding:11px 20px;
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  }
+  .brand{
+    font-size:15px;font-weight:750;letter-spacing:-.03em;flex:none;
+    padding-right:4px;
+  }
+  .brand small{
+    display:block;font-size:11px;font-weight:500;color:var(--t4);
+    letter-spacing:-.01em;margin-top:-1px;
+  }
+  .lede{
+    color:var(--t3);font-size:13px;margin:0;
+    padding:22px 4px 16px;
+  }
 
   /* ---------- bento kpi ---------- */
   .bento{
@@ -73,12 +90,7 @@
   .spark i.ok{background:#9CCBB7;}.spark i.warn{background:#E4C083;}.spark i.bad{background:#E5A69D;}
 
   /* ---------- toolbar ---------- */
-  .bar{
-    position:sticky;top:0;z-index:5;background:var(--bg);
-    padding:10px 0 12px;margin-bottom:4px;
-    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
-  }
-  .tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;}
+  .tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;}
   .tabs button{
     border:0;background:transparent;color:var(--t3);font-family:inherit;
     font-size:13px;font-weight:650;padding:6px 13px;border-radius:9px;cursor:pointer;
@@ -89,16 +101,16 @@
   .tabs .cnt{font-family:var(--mono);font-size:11px;opacity:.7;}
   .spacer{flex:1;}
   .search{
-    display:flex;align-items:center;gap:7px;background:var(--card);
-    border:1px solid var(--line);border-radius:11px;padding:7px 11px;min-width:180px;
+    display:flex;align-items:center;gap:7px;background:var(--bg);
+    border:1px solid var(--line);border-radius:11px;padding:6px 11px;min-width:170px;
   }
   .search input{border:0;background:transparent;font-family:inherit;font-size:13px;
     color:var(--t1);width:100%;outline:0;}
   .search svg{flex:none;color:var(--t4);}
   .btn{
-    border:1px solid var(--line);background:var(--card);color:var(--t2);
+    border:1px solid var(--line);background:var(--bg);color:var(--t2);
     font-family:inherit;font-size:12.5px;font-weight:650;
-    padding:7px 12px;border-radius:11px;cursor:pointer;white-space:nowrap;
+    padding:6px 12px;border-radius:11px;cursor:pointer;white-space:nowrap;
   }
   .btn:hover{background:var(--card-2);color:var(--t1);}
   .btn[aria-pressed="true"]{background:var(--accent-bg);border-color:var(--accent-line);color:var(--accent);}
@@ -227,13 +239,20 @@
   @media (max-width:820px){
     .bento{grid-template-columns:repeat(2,1fr);}
     .tile.wide{grid-column:span 2;}
+    .search{order:3;flex:1 1 100%;min-width:0;}
+    .spacer{display:none;}
   }
   @media (max-width:520px){
     .wrap{padding:0 14px 70px;}
+    .topnav-in{padding:10px 14px;gap:8px;}
+    .brand{font-size:14px;}
+    .brand small{display:none;}
+    .tabs{flex:1 1 auto;}
+    .tabs button{flex:1;justify-content:center;padding:6px 8px;}
     .bento{grid-template-columns:1fr;}
     .tile.wide{grid-column:span 1;}
     .grid.ings{grid-template-columns:1fr 1fr;}
-    header{padding:24px 2px 16px;}
+    .lede{padding:16px 2px 14px;}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -241,11 +260,29 @@
 <body>
 
 
+<header class="topnav">
+  <div class="topnav-in">
+    <span class="brand">북한산장 원가<small>계산기</small></span>
+    <nav class="tabs" id="tabs">
+      <button data-view="menu" aria-current="true">메뉴 <span class="cnt" id="c-menu"></span></button>
+      <button data-view="batch" aria-current="false">반제품 <span class="cnt" id="c-batch"></span></button>
+      <button data-view="ing" aria-current="false">재료 <span class="cnt" id="c-ing"></span></button>
+    </nav>
+    <span class="spacer"></span>
+    <label class="search">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.7"/>
+        <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <input type="text" id="q" placeholder="이름으로 찾기" aria-label="검색">
+    </label>
+    <button class="btn" id="fMiss" aria-pressed="false">미입력만</button>
+    <button class="btn" id="fSort" aria-pressed="false">원가율순</button>
+  </div>
+</header>
+
 <div class="wrap">
-  <header>
-    <h1>북한산장 원가 계산기</h1>
-    <p>재료값을 고치면 반제품과 메뉴 원가가 바로 다시 계산됩니다</p>
-  </header>
+  <p class="lede">재료값을 고치면 반제품과 메뉴 원가가 바로 다시 계산됩니다</p>
 
   <dl class="bento">
     <div class="tile wide">
@@ -274,24 +311,6 @@
       <div class="note" id="k5n">—</div>
     </div>
   </dl>
-
-  <div class="bar">
-    <div class="tabs" id="tabs">
-      <button data-view="menu" aria-current="true">메뉴 <span class="cnt" id="c-menu"></span></button>
-      <button data-view="batch" aria-current="false">반제품 <span class="cnt" id="c-batch"></span></button>
-      <button data-view="ing" aria-current="false">재료 <span class="cnt" id="c-ing"></span></button>
-    </div>
-    <span class="spacer"></span>
-    <label class="search">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.7"/>
-        <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-      </svg>
-      <input type="text" id="q" placeholder="이름으로 찾기" aria-label="검색">
-    </label>
-    <button class="btn" id="fMiss" aria-pressed="false">미입력만</button>
-    <button class="btn" id="fSort" aria-pressed="false">원가율순</button>
-  </div>
 
   <main id="view"></main>
 
