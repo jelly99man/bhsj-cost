@@ -238,21 +238,7 @@
     padding:44px 20px;text-align:center;color:var(--t3);font-size:13.5px;
   }
 
-  /* backup */
-  .sheet{
-    background:var(--card);border:1px solid var(--line);border-radius:16px;
-    padding:18px;margin-top:16px;display:flex;flex-direction:column;gap:15px;max-width:560px;
-  }
-  .sheet h2{font-size:14px;margin:0;font-weight:700;}
-  .sheet p{margin:4px 0 0;font-size:12.5px;color:var(--t3);line-height:1.55;}
-  .sheet label{font-size:11.5px;font-weight:650;color:var(--t3);display:block;margin-bottom:5px;}
-  .sheet textarea{
-    width:100%;font-family:var(--mono);font-size:11px;line-height:1.5;
-    background:var(--card-2);border:1.5px solid var(--line);border-radius:11px;
-    padding:10px;color:var(--t2);resize:vertical;
-  }
-  .sheet textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg);}
-  .acts{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;}
+  .acts{display:flex;gap:7px;flex-wrap:wrap;}
 
   .toast{
     position:fixed;left:50%;bottom:22px;transform:translate(-50%,8px);z-index:100;
@@ -341,29 +327,8 @@
 
   <main id="view"></main>
 
-  <section class="sheet" id="backupPanel" hidden>
-    <div>
-      <h2>다른 기기에서도 같은 값 보기</h2>
-      <p>입력한 값은 지금 이 브라우저에만 저장됩니다. 코드를 복사해 두면 폰이나 다른 컴퓨터에서 그대로 불러올 수 있어요.</p>
-    </div>
-    <div>
-      <label for="backupOut">내 값 코드</label>
-      <textarea id="backupOut" readonly rows="3"></textarea>
-      <div class="acts">
-        <button class="btn primary" id="copyBtn">코드 복사</button>
-        <button class="btn" id="fileBtn" hidden>파일로 저장</button>
-      </div>
-    </div>
-    <div>
-      <label for="backupIn">코드로 불러오기</label>
-      <textarea id="backupIn" rows="3" placeholder="복사해 둔 코드를 붙여넣으세요"></textarea>
-      <div class="acts"><button class="btn" id="loadBtn">불러오기</button></div>
-    </div>
-  </section>
-
-  <div class="acts" style="margin-top:16px;padding:0 4px">
-    <button class="btn" id="backupBtn">값 백업 · 불러오기</button>
-    <button class="btn" id="reset">기본값으로 초기화</button>
+  <div class="acts" style="margin-top:20px;padding:0 4px">
+    <button class="btn" id="reset">기본값으로 되돌리기</button>
   </div>
 </div>
 
@@ -920,50 +885,6 @@
   document.getElementById("reset").addEventListener("click",function(){
     S=seed(); open={}; save(); render(); toast("기본값으로 되돌렸어요");
   });
-
-  function encodeState(){
-    try{ return btoa(unescape(encodeURIComponent(JSON.stringify(buildDiff())))); }catch(e){ return ""; }
-  }
-  function decodeState(c){
-    try{ return JSON.parse(decodeURIComponent(escape(atob(c.trim())))); }catch(e){ return null; }
-  }
-  var panel=document.getElementById("backupPanel");
-  document.getElementById("backupBtn").addEventListener("click",function(){
-    panel.hidden=!panel.hidden;
-    if(!panel.hidden){ document.getElementById("backupOut").value=encodeState();
-      panel.scrollIntoView({behavior:"smooth",block:"nearest"}); }
-  });
-  document.getElementById("copyBtn").addEventListener("click",function(){
-    var ta=document.getElementById("backupOut");
-    ta.value=encodeState(); ta.select();
-    var ok=function(){ toast("코드를 복사했어요"); };
-    if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(ta.value).then(ok,function(){
-        try{ document.execCommand("copy"); ok(); }catch(e){ toast("직접 선택해 복사해주세요"); }});
-    }else{ try{ document.execCommand("copy"); ok(); }catch(e){ toast("직접 선택해 복사해주세요"); } }
-  });
-  document.getElementById("loadBtn").addEventListener("click",function(){
-    var code=document.getElementById("backupIn").value;
-    if(!code.trim()){ toast("코드를 붙여넣어주세요"); return; }
-    var d=decodeState(code);
-    if(!d||typeof d!=="object"){ toast("코드를 읽을 수 없어요"); return; }
-    S=applyDiff(d); open={}; save(); render();
-    document.getElementById("backupIn").value=""; toast("값을 불러왔어요");
-  });
-
-  (async function(){
-    var dl=null;
-    try{ dl=(window.claude&&claude.use)?await claude.use("downloads"):null; }catch(e){ dl=null; }
-    if(!dl) return;
-    var btn=document.getElementById("fileBtn"); btn.hidden=false;
-    btn.addEventListener("click",async function(){
-      try{
-        await dl.save({filename:"북한산장-원가-백업.json",
-          data:JSON.stringify({saved:new Date().toISOString(),data:buildDiff()},null,2)});
-        toast("파일로 저장했어요");
-      }catch(err){ toast(err&&err.code==="declined"?"저장을 취소했어요":"저장하지 못했어요"); }
-    });
-  })();
 
   S=load();
   render();
