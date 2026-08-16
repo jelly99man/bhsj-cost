@@ -133,6 +133,31 @@
   .gh:first-child{margin-top:6px;}
   .gh span{font-family:var(--mono);font-weight:600;color:var(--t4);font-size:11px;}
 
+  /* category chips */
+  .chips{
+    display:flex;gap:6px;overflow-x:auto;padding:20px 2px 14px;
+    margin:0 -2px;scrollbar-width:thin;
+  }
+  .chips::-webkit-scrollbar{height:5px;}
+  .chips::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:99px;}
+  .chips button{
+    flex:none;border:1px solid var(--line);background:var(--card);color:var(--t2);
+    font-family:inherit;font-size:12.5px;font-weight:650;
+    padding:7px 13px;border-radius:99px;cursor:pointer;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .chips button:hover{background:var(--card-2);color:var(--t1);}
+  .chips button b{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--t4);}
+  .chips button[aria-pressed="true"]{
+    background:var(--accent);border-color:var(--accent);color:#fff;
+  }
+  .chips button[aria-pressed="true"] b{color:rgba(255,255,255,.72);}
+  .chips button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .chips .dot{
+    width:6px;height:6px;border-radius:99px;background:var(--warn);flex:none;
+  }
+  .chips button[aria-pressed="true"] .dot{background:#fff;}
+
   .card{
     background:var(--card);border:1px solid var(--line);border-radius:16px;
     overflow:hidden;
@@ -282,6 +307,7 @@
 </header>
 
 <div class="wrap">
+  <div id="dash">
   <p class="lede">재료값을 고치면 반제품과 메뉴 원가가 바로 다시 계산됩니다</p>
 
   <dl class="bento">
@@ -311,6 +337,7 @@
       <div class="note" id="k5n">—</div>
     </div>
   </dl>
+  </div>
 
   <main id="view"></main>
 
@@ -347,59 +374,59 @@
   "use strict";
 
   var SEED_ING = [
-    ["bean","블렌딩 원두 (진양조)","음료",22000,1000,"g"],
-    ["jaksal","잭살차","음료",99000,200,"g"],
-    ["heotgae","헛개열매차","음료",59000,200,"g"],
-    ["mokryeon","목련현미차","음료",59000,200,"g"],
-    ["ssuk","이른쑥차","음료",79000,200,"g"],
-    ["milkteaBase","밀크티 원액","음료",null,null,"g"],
-    ["kombuG","자몽 얼그레이 콤부베이스","음료",6300,500,"g"],
-    ["kombuR","라즈베리레몬 콤부베이스","음료",6300,500,"g"],
-    ["milk","매일우유 바리스타","음료",2100,1000,"ml"],
-    ["oat","어메이징오트","음료",2600,950,"ml"],
-    ["soda","탄산수","음료",360,190,"ml"],
-    ["cream","생크림","음료",4800,500,"ml"],
-    ["condensed","연유","음료",4600,500,"g"],
-    ["passion","테너 과육 패션후르츠","음료",13800,1000,"g"],
-    ["tenerbase","테너베이스","음료",10700,1200,"g"],
-    ["rosemary","로즈마리","음료",1880,10,"g"],
-    ["pear","배","음료",null,null,"g"],
-    ["lemon","레몬","음료",null,null,"g"],
-    ["snackA","두부스낵 아몬드","스낵",16500,10,"개"],
-    ["snackH","두부스낵 현미","스낵",16500,10,"개"],
-    ["snackO","두부스낵 오트","스낵",16500,10,"개"],
-    ["bread","빵 (샌드위치용)","샌드위치",null,null,"개"],
-    ["jambon","잠봉","샌드위치",null,null,"g"],
-    ["burrata","부라타 치즈","샌드위치",null,null,"개"],
-    ["parmesan","파마산 치즈","샌드위치",null,null,"g"],
-    ["tofu","두부","샌드위치",null,null,"g"],
-    ["yogurt","요거트","샌드위치",null,null,"g"],
-    ["mayo","마요네즈","샌드위치",null,null,"g"],
-    ["mustard","홀그레인 머스타드","샌드위치",null,null,"g"],
-    ["gochujang","고추장","샌드위치",null,null,"g"],
-    ["balsamic","발사믹 글레이즈","샌드위치",null,null,"g"],
-    ["oliveoil","올리브유","샌드위치",null,null,"g"],
-    ["sesameoil","참기름","샌드위치",null,null,"g"],
-    ["perillaoil","들기름","샌드위치",null,null,"g"],
-    ["vinegar","식초","샌드위치",null,null,"g"],
-    ["honey","꿀","샌드위치",null,null,"g"],
-    ["oligo","올리고당","샌드위치",null,null,"g"],
-    ["salt","소금","샌드위치",null,null,"g"],
-    ["pepper","후추","샌드위치",null,null,"g"],
-    ["chili","고춧가루","샌드위치",null,null,"g"],
-    ["sesame","깨","샌드위치",null,null,"g"],
-    ["sunflower","해바라기씨","샌드위치",null,null,"g"],
-    ["perilla","깻잎","샌드위치",null,null,"g"],
-    ["arugula","루꼴라","샌드위치",null,null,"g"],
-    ["cilantro","고수","샌드위치",null,null,"g"],
-    ["lettuce","청상추","샌드위치",null,null,"g"],
-    ["greenonion","대파","샌드위치",null,null,"g"],
-    ["carrot","당근","샌드위치",null,null,"g"],
-    ["tomato","방울토마토","샌드위치",null,null,"g"],
-    ["water","물","샌드위치",0,1,"g"],
-    ["cup","종이컵 13oz","포장 (원가 미반영)",30800,1000,"개"],
-    ["lid","뚜껑 85파이","포장 (원가 미반영)",3800,100,"개"],
-    ["holder","컵홀더 13oz","포장 (원가 미반영)",3800,100,"개"]
+    ["bean","블렌딩 원두 (진양조)","원두·찻잎",22000,1000,"g"],
+    ["jaksal","잭살차","원두·찻잎",99000,200,"g"],
+    ["heotgae","헛개열매차","원두·찻잎",59000,200,"g"],
+    ["mokryeon","목련현미차","원두·찻잎",59000,200,"g"],
+    ["ssuk","이른쑥차","원두·찻잎",79000,200,"g"],
+    ["milkteaBase","밀크티 원액","음료 베이스",null,null,"g"],
+    ["kombuG","자몽 얼그레이 콤부베이스","음료 베이스",6300,500,"g"],
+    ["kombuR","라즈베리레몬 콤부베이스","음료 베이스",6300,500,"g"],
+    ["soda","탄산수","음료 베이스",360,190,"ml"],
+    ["passion","테너 과육 패션후르츠","음료 베이스",13800,1000,"g"],
+    ["tenerbase","테너베이스","음료 베이스",10700,1200,"g"],
+    ["milk","매일우유 바리스타","유제품",2100,1000,"ml"],
+    ["oat","어메이징오트","유제품",2600,950,"ml"],
+    ["cream","생크림","유제품",4800,500,"ml"],
+    ["condensed","연유","유제품",4600,500,"g"],
+    ["yogurt","요거트","유제품",null,null,"g"],
+    ["burrata","부라타 치즈","유제품",null,null,"개"],
+    ["parmesan","파마산 치즈","유제품",null,null,"g"],
+    ["pear","배","채소·과일",null,null,"g"],
+    ["lemon","레몬","채소·과일",null,null,"g"],
+    ["perilla","깻잎","채소·과일",null,null,"g"],
+    ["arugula","루꼴라","채소·과일",null,null,"g"],
+    ["cilantro","고수","채소·과일",null,null,"g"],
+    ["lettuce","청상추","채소·과일",null,null,"g"],
+    ["greenonion","대파","채소·과일",null,null,"g"],
+    ["carrot","당근","채소·과일",null,null,"g"],
+    ["tomato","방울토마토","채소·과일",null,null,"g"],
+    ["rosemary","로즈마리","채소·과일",1880,10,"g"],
+    ["jambon","잠봉","육류·두부",null,null,"g"],
+    ["tofu","두부","육류·두부",null,null,"g"],
+    ["oliveoil","올리브유","기름",null,null,"g"],
+    ["sesameoil","참기름","기름",null,null,"g"],
+    ["perillaoil","들기름","기름",null,null,"g"],
+    ["mayo","마요네즈","소스·양념",null,null,"g"],
+    ["mustard","홀그레인 머스타드","소스·양념",null,null,"g"],
+    ["gochujang","고추장","소스·양념",null,null,"g"],
+    ["balsamic","발사믹 글레이즈","소스·양념",null,null,"g"],
+    ["vinegar","식초","소스·양념",null,null,"g"],
+    ["honey","꿀","소스·양념",null,null,"g"],
+    ["oligo","올리고당","소스·양념",null,null,"g"],
+    ["salt","소금","소스·양념",null,null,"g"],
+    ["pepper","후추","소스·양념",null,null,"g"],
+    ["chili","고춧가루","소스·양념",null,null,"g"],
+    ["sesame","깨","견과·씨앗",null,null,"g"],
+    ["sunflower","해바라기씨","견과·씨앗",null,null,"g"],
+    ["bread","빵 (샌드위치용)","베이커리",null,null,"개"],
+    ["snackA","두부스낵 아몬드","완제품 스낵",16500,10,"개"],
+    ["snackH","두부스낵 현미","완제품 스낵",16500,10,"개"],
+    ["snackO","두부스낵 오트","완제품 스낵",16500,10,"개"],
+    ["cup","종이컵 13oz","포장재 (원가 미반영)",30800,1000,"개"],
+    ["lid","뚜껑 85파이","포장재 (원가 미반영)",3800,100,"개"],
+    ["holder","컵홀더 13oz","포장재 (원가 미반영)",3800,100,"개"],
+    ["water","물","기타",0,1,"g"]
   ];
 
   var SEED_BATCH = [
@@ -454,7 +481,7 @@
   ];
 
   var KEY="bhsj-cost-v2";
-  var S=null, view="menu", open={}, q="", onlyMiss=false, sortRate=false;
+  var S=null, view="menu", open={}, q="", onlyMiss=false, sortRate=false, ingCat=null;
 
   function seed(){
     var ing={};
@@ -702,17 +729,37 @@
       '<div class="grid batches">'+cards+'</div>';
   }
 
+  function ingChips(){
+    var all=Object.keys(S.ing), order=[], tally={};
+    all.forEach(function(id){
+      var c=S.ing[id].cat;
+      if(!tally[c]){ tally[c]={n:0,miss:0}; order.push(c); }
+      tally[c].n++;
+      if(unitCost(id)===null) tally[c].miss++;
+    });
+    var totalMiss=0; all.forEach(function(id){ if(unitCost(id)===null) totalMiss++; });
+    var h='<div class="chips" role="group" aria-label="재료 분류">';
+    h+='<button data-cat="" aria-pressed="'+(ingCat===null?'true':'false')+'">'+
+       (totalMiss?'<span class="dot"></span>':'')+'전체 <b>'+all.length+'</b></button>';
+    order.forEach(function(c){
+      h+='<button data-cat="'+esc(c)+'" aria-pressed="'+(ingCat===c?'true':'false')+'">'+
+        (tally[c].miss?'<span class="dot"></span>':'')+esc(c)+' <b>'+tally[c].n+'</b></button>';
+    });
+    return h+'</div>';
+  }
+
   function ingView(){
     var ids=Object.keys(S.ing).filter(function(id){
+      if(ingCat!==null && S.ing[id].cat!==ingCat) return false;
       if(!hit(S.ing[id].name)) return false;
       if(onlyMiss && unitCost(id)!==null) return false;
       return true;
     });
-    if(!ids.length) return emptyBox();
+    if(!ids.length) return ingChips()+emptyBox();
     var cats=[],by={};
     ids.forEach(function(id){ var c=S.ing[id].cat;
       if(!by[c]){by[c]=[];cats.push(c);} by[c].push(id); });
-    return cats.map(function(cat){
+    return ingChips()+cats.map(function(cat){
       var cards=by[cat].map(function(id){
         var g=S.ing[id], u=unitCost(id);
         return '<article class="card"><div class="ic">'+
@@ -808,6 +855,10 @@
   }
 
   function render(){
+    /* 대시보드는 메뉴 탭에서만 */
+    document.getElementById("dash").hidden = (view!=="menu");
+    /* 원가율순 정렬은 메뉴에만 해당 */
+    document.getElementById("fSort").hidden = (view!=="menu");
     document.getElementById("view").innerHTML=
       view==="menu"?menuView():(view==="batch"?batchView():ingView());
     refresh();
@@ -822,7 +873,7 @@
   }
   document.getElementById("tabs").addEventListener("click",function(e){
     var b=e.target.closest("button[data-view]"); if(!b) return;
-    view=b.dataset.view;
+    view=b.dataset.view; ingCat=null;
     Array.prototype.forEach.call(this.querySelectorAll("button"),function(x){
       x.setAttribute("aria-current", x===b?"true":"false"); });
     render();
@@ -835,6 +886,14 @@
 
   var viewEl=document.getElementById("view");
   viewEl.addEventListener("click",function(e){
+    var c=e.target.closest("[data-cat]");
+    if(c){
+      var v=c.getAttribute("data-cat");
+      ingCat = v===""?null:v;
+      render();
+      document.getElementById("view").scrollIntoView({block:"start",behavior:"smooth"});
+      return;
+    }
     var t=e.target.closest("[data-tog]"); if(!t) return;
     var k=t.dataset.tog;
     open[k]=!open[k];
