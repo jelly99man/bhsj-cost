@@ -65,9 +65,28 @@
     display:block;font-size:11px;font-weight:500;color:var(--t4);
     letter-spacing:-.01em;margin-top:-1px;
   }
-  .lede{
-    color:var(--t3);font-size:13px;margin:0;
-    padding:22px 4px 16px;
+  .src{
+    font-size:12.5px;margin:0;padding:20px 4px 14px;
+    display:flex;align-items:center;gap:7px;flex-wrap:wrap;color:var(--t3);
+  }
+  .src::before{
+    content:"";width:7px;height:7px;border-radius:99px;background:var(--t4);flex:none;
+  }
+  .src.ok::before{background:var(--ok);}
+  .src.err::before{background:var(--bad);}
+  .src.err{color:var(--bad);}
+  .src a{color:var(--accent);font-weight:650;text-decoration:none;}
+  .src a:hover{text-decoration:underline;}
+
+  /* 읽기 전용 값 */
+  .ro{
+    font-size:13px;font-weight:700;color:var(--t1);
+    background:var(--card-2);border:1px solid var(--line);
+    border-radius:9px;padding:7px 9px;text-align:right;
+  }
+  .amt{
+    font-family:var(--mono);font-variant-numeric:tabular-nums;
+    font-size:13px;font-weight:650;min-width:34px;text-align:right;display:inline-block;
   }
 
   /* ---------- bento kpi ---------- */
@@ -294,7 +313,7 @@
 
 <div class="wrap">
   <div id="dash">
-  <p class="lede">재료값을 고치면 반제품과 메뉴 원가가 바로 다시 계산됩니다</p>
+  <p class="src loading" id="src">시트에서 불러오는 중…</p>
 
   <dl class="bento">
     <div class="tile wide">
@@ -328,7 +347,8 @@
   <main id="view"></main>
 
   <div class="acts" style="margin-top:20px;padding:0 4px">
-    <button class="btn" id="reset">기본값으로 되돌리기</button>
+    <button class="btn" id="reload">시트에서 다시 불러오기</button>
+    <a class="btn" href="https://docs.google.com/spreadsheets/d/14RHaidaImCNFUT3HhQPZFptp5K4s_kmUtok46c_BBcM/edit" target="_blank" rel="noopener" style="text-decoration:none">구글시트 열기 →</a>
   </div>
 </div>
 
@@ -446,7 +466,89 @@
   ];
 
   var KEY="bhsj-cost-v2";
+  var SHEET_ID="14RHaidaImCNFUT3HhQPZFptp5K4s_kmUtok46c_BBcM";
+  var SHEET_URL="https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/edit";
   var S=null, view="menu", open={}, q="", onlyMiss=false, sortRate=false, ingCat=null;
+  var srcState="local";   /* local | sheet | error */
+
+  /* ---------- 구글시트 읽기 ---------- */
+  function csvUrl(tab){
+    return "https://docs.google.com/spreadsheets/d/"+SHEET_ID+
+      "/gviz/tq?tqx=out:csv&sheet="+encodeURIComponent(tab)+"&t="+Date.now();
+  }
+  function parseCSV(text){
+    var rows=[], row=[], cur="", q=false, i=0;
+    while(i<text.length){
+      var c=text[i];
+      if(q){
+        if(c==='"'){ if(text[i+1]==='"'){ cur+='"'; i++; } else q=false; }
+        else cur+=c;
+      }else{
+        if(c==='"') q=true;
+        else if(c===","){ row.push(cur); cur=""; }
+        else if(c==="\n"){ row.push(cur); rows.push(row); row=[]; cur=""; }
+        else if(c!=="\r") cur+=c;
+      }
+      i++;
+    }
+    if(cur.length||row.length){ row.push(cur); rows.push(row); }
+    return rows.filter(function(r){ return r.some(function(c){ return String(c).trim()!==""; }); });
+  }
+  function n(v){
+    v=String(v==null?"":v).replace(/[,\s원]/g,"").trim();
+    if(v==="") return null;
+    var x=parseFloat(v);
+    return isNaN(x)?null:x;
+  }
+  function slug(s){
+    return String(s).trim().toLowerCase().replace(/\s+/g,"_").replace(/[^\w가-힣._*()·-]/g,"");
+  }
+  async function fetchSheet(){
+    var tabs=["재료","반제품","메뉴원가"];
+    var texts=await Promise.all(tabs.map(function(t){
+      return fetch(csvUrl(t)).then(function(r){
+        if(!r.ok) throw new Error(t+" "+r.status);
+        return r.text();
+      });
+    }));
+    var ingRows=parseCSV(texts[0]).slice(1);
+    var batRows=parseCSV(texts[1]).slice(1);
+    var menRows=parseCSV(texts[2]).slice(1);
+    if(!ingRows.length||!menRows.length) throw new Error("빈 시트");
+
+    var ing={}, byName={};
+    ingRows.forEach(function(r){
+      var name=(r[0]||"").trim(); if(!name) return;
+      var id=slug(name);
+      ing[id]={name:name, cat:(r[1]||"기타").trim(), price:n(r[2]), qty:n(r[3]), unit:(r[4]||"g").trim()};
+      byName[name]=id;
+    });
+
+    var batOrder=[], batMap={};
+    batRows.forEach(function(r){
+      var bn=(r[0]||"").trim(); if(!bn) return;
+      var bid=slug(bn);
+      if(!batMap[bid]){ batMap[bid]={id:bid,name:bn,yield:(r[1]||"").trim(),items:[]}; batOrder.push(bid); }
+      var ref=byName[(r[2]||"").trim()];
+      if(ref) batMap[bid].items.push({ing:ref, amt:n(r[3]), note:(r[4]||"").trim()});
+    });
+    var batch=batOrder.map(function(id){ return batMap[id]; });
+    var batByName={}; batch.forEach(function(b){ batByName[b.name]=b.id; });
+
+    var menOrder=[], menMap={};
+    menRows.forEach(function(r){
+      var mn=(r[0]||"").trim(); if(!mn) return;
+      var mid=slug(mn);
+      if(!menMap[mid]){ menMap[mid]={id:mid,name:mn,cat:(r[1]||"기타").trim(),price:n(r[2]),items:[]}; menOrder.push(mid); }
+      var isBatch=(r[3]||"").trim()==="반제품";
+      var target=(r[4]||"").trim();
+      var ref=isBatch?batByName[target]:byName[target];
+      if(ref) menMap[mid].items.push({kind:isBatch?"b":"i", ref:ref, amt:n(r[5]), note:(r[6]||"").trim()});
+    });
+    var menu=menOrder.map(function(id){ return menMap[id]; });
+
+    return {ing:ing, batch:batch, menu:menu};
+  }
 
   function seed(){
     var ing={};
@@ -524,54 +626,6 @@
   function hit(n){ return !q || n.toLowerCase().indexOf(q.toLowerCase())>=0; }
 
   /* ---------- persistence ---------- */
-  function buildDiff(){
-    var base=seed(), d={i:{},b:{},m:{}};
-    Object.keys(S.ing).forEach(function(id){
-      var a=S.ing[id],o=base.ing[id];
-      if(o&&(a.price!==o.price||a.qty!==o.qty)) d.i[id]=[a.price,a.qty];
-    });
-    S.batch.forEach(function(bt,bi){
-      var ob=base.batch[bi]; if(!ob) return; var e={};
-      bt.items.forEach(function(it,j){ if(ob.items[j]&&it.amt!==ob.items[j].amt) e[j]=it.amt; });
-      if(Object.keys(e).length) d.b[bt.id]=e;
-    });
-    S.menu.forEach(function(m,mi){
-      var om=base.menu[mi]; if(!om) return; var e={},a={};
-      if(m.price!==om.price) e.p=m.price;
-      m.items.forEach(function(it,j){ if(om.items[j]&&it.amt!==om.items[j].amt) a[j]=it.amt; });
-      if(Object.keys(a).length) e.a=a;
-      if(Object.keys(e).length) d.m[m.id]=e;
-    });
-    return d;
-  }
-  function applyDiff(d){
-    var s=seed();
-    if(d.i) Object.keys(d.i).forEach(function(id){
-      if(s.ing[id]){ s.ing[id].price=d.i[id][0]; s.ing[id].qty=d.i[id][1]; }});
-    if(d.b) s.batch.forEach(function(bt){
-      var e=d.b[bt.id]; if(!e) return;
-      Object.keys(e).forEach(function(j){ if(bt.items[+j]) bt.items[+j].amt=e[j]; });});
-    if(d.m) s.menu.forEach(function(m){
-      var e=d.m[m.id]; if(!e) return;
-      if(Object.prototype.hasOwnProperty.call(e,"p")) m.price=e.p;
-      if(e.a) Object.keys(e.a).forEach(function(j){ if(m.items[+j]) m.items[+j].amt=e.a[j]; });});
-    return s;
-  }
-  function load(){
-    try{
-      var raw=localStorage.getItem(KEY);
-      if(raw){ var p=JSON.parse(raw); if(p&&p.v===2&&p.d) return applyDiff(p.d); }
-    }catch(e){}
-    return seed();
-  }
-  var saveT=null;
-  function save(){
-    clearTimeout(saveT);
-    saveT=setTimeout(function(){
-      try{ localStorage.setItem(KEY,JSON.stringify({v:2,d:buildDiff()})); toast("저장됨"); }
-      catch(e){ toast("이 브라우저에선 저장이 안 돼요"); }
-    },400);
-  }
   var toastT=null;
   function toast(m){
     var el=document.getElementById("toast");
@@ -615,16 +669,13 @@
         (it.note?'<small>'+esc(it.note)+'</small>':'')+
         '<small class="num" data-o="ml-u-'+m.id+'-'+idx+'">'+
         (u===null?'단가 미입력':fmtUnit(u)+'원/'+esc(lineUnitLabel(it)))+'</small>';
-      var inp='<input class="in s" type="text" inputmode="decimal" value="'+
-        (it.amt===null?"":it.amt)+'" placeholder="?" data-mi="'+m.id+'" data-idx="'+idx+
-        '" aria-label="'+esc(lineName(it))+' 사용량">';
+      var inp='<span class="amt">'+(it.amt===null?'<span class="muted">?</span>':won(it.amt,it.amt%1?1:0))+'</span>';
       h+=lineRow(nm,inp,lineUnitLabel(it),"ml-c-"+m.id+"-"+idx,lc);
     });
     h+='<div class="sum"><span>원가 합계</span><span class="num" data-o="mf-'+m.id+'">'+
        (c.cost?won(Math.round(c.cost))+'원':'—')+'</span></div>';
     h+='<div class="ic-in" style="margin-top:12px"><div class="fld"><label>판매가</label>'+
-       '<input class="in" type="text" inputmode="numeric" value="'+(m.price===null?"":m.price)+
-       '" placeholder="미정" data-price="'+m.id+'" aria-label="'+esc(m.name)+' 판매가"></div></div>';
+       '<div class="ro num">'+(m.price===null?'<span class="muted">미정</span>':won(m.price)+'원')+'</div></div></div>';
     if(c.miss) h+='<div class="hint">재료 <b>'+c.miss+'개</b>의 단가나 사용량이 비어 있어 아직 부분값입니다.</div>';
     h+='</div></article>';
     return h;
@@ -681,9 +732,7 @@
           (it.note?'<small>'+esc(it.note)+'</small>':'')+
           '<small class="num" data-o="bl-u-'+b.id+'-'+idx+'">'+
           (u===null?'단가 미입력':fmtUnit(u)+'원/g')+'</small>';
-        var inp='<input class="in s" type="text" inputmode="decimal" value="'+
-          (it.amt===null?"":it.amt)+'" placeholder="?" data-bi="'+b.id+'" data-idx="'+idx+
-          '" aria-label="사용량">';
+        var inp='<span class="amt">'+(it.amt===null?'<span class="muted">?</span>':won(it.amt,it.amt%1?1:0))+'</span>';
         h+=lineRow(nm,inp,"g","bl-c-"+b.id+"-"+idx,lc);
       });
       h+='<div class="hint">배치 원가를 완성 총량으로 나눈 <b>1g당 원가</b>가 메뉴로 넘어갑니다. 샌드위치에 40g 쓰면 40g어치만 잡혀요.</div>';
@@ -732,12 +781,10 @@
           '<div class="ic-val"><b class="num'+(u===null?' muted':'')+'" data-o="iu-'+id+'">'+
           fmtUnit(u)+'</b><i>원 / '+esc(g.unit)+'</i></div>'+
           '<div class="ic-in">'+
-            '<div class="fld"><label>구매가</label><input class="in" type="text" inputmode="numeric" '+
-              'value="'+(g.price===null?"":g.price)+'" placeholder="0" data-ip="'+id+'" '+
-              'aria-label="'+esc(g.name)+' 구매가"></div>'+
-            '<div class="fld"><label>총량 ('+esc(g.unit)+')</label><input class="in" type="text" inputmode="decimal" '+
-              'value="'+(g.qty===null?"":g.qty)+'" placeholder="0" data-iq="'+id+'" '+
-              'aria-label="'+esc(g.name)+' 총량"></div>'+
+            '<div class="fld"><label>구매가</label><div class="ro num">'+
+              (g.price===null?'<span class="muted">미입력</span>':won(g.price)+'원')+'</div></div>'+
+            '<div class="fld"><label>총량</label><div class="ro num">'+
+              (g.qty===null?'<span class="muted">—</span>':won(g.qty)+esc(g.unit))+'</div></div>'+
           '</div></div></article>';
       }).join("");
       var missN=0; by[cat].forEach(function(id){ if(unitCost(id)===null) missN++; });
@@ -870,24 +917,32 @@
       if(more) more.textContent=open[k]?"접기":(more.dataset.n||"펼치기");
     }
   });
-  viewEl.addEventListener("input",function(e){
-    var el=e.target; if(el.tagName!=="INPUT") return;
-    var v=num(el.value), d=el.dataset;
-    if(d.ip!==undefined) S.ing[d.ip].price=v;
-    else if(d.iq!==undefined) S.ing[d.iq].qty=v;
-    else if(d.price!==undefined) S.menu.forEach(function(m){ if(m.id===d.price) m.price=v; });
-    else if(d.mi!==undefined) S.menu.forEach(function(m){ if(m.id===d.mi) m.items[+d.idx].amt=v; });
-    else if(d.bi!==undefined){ var b=batchById(d.bi); if(b) b.items[+d.idx].amt=v; }
-    else return;
-    refresh(); save();
-  });
+  document.getElementById("reload").addEventListener("click",function(){ boot(true); });
 
-  document.getElementById("reset").addEventListener("click",function(){
-    S=seed(); open={}; save(); render(); toast("기본값으로 되돌렸어요");
-  });
-
-  S=load();
-  render();
+  /* ---------- 시작 ---------- */
+  function setSrc(state, msg){
+    srcState=state;
+    var el=document.getElementById("src");
+    el.className="src "+state;
+    el.innerHTML = msg;
+  }
+  async function boot(manual){
+    setSrc("loading","시트에서 불러오는 중…");
+    try{
+      var data=await fetchSheet();
+      S=data;
+      var t=new Date();
+      var hh=String(t.getHours()).padStart(2,"0"), mm=String(t.getMinutes()).padStart(2,"0");
+      setSrc("ok",'구글시트 기준 · '+hh+':'+mm+' 불러옴 &nbsp;<a href="'+SHEET_URL+'" target="_blank" rel="noopener">시트에서 수정 →</a>');
+      if(manual) toast("시트에서 다시 불러왔어요");
+    }catch(err){
+      S=seed();
+      setSrc("err",'시트를 못 읽어 저장된 값으로 표시 중 &nbsp;<a href="'+SHEET_URL+'" target="_blank" rel="noopener">시트 열기 →</a>');
+      if(manual) toast("시트를 불러오지 못했어요");
+    }
+    render();
+  }
+  boot(false);
 })();
 </script>
 
